@@ -1,4 +1,4 @@
-FROM public.ecr.aws/amazoncorretto/amazoncorretto:17-alpine
+FROM public.ecr.aws/amazoncorretto/amazoncorretto:17
 WORKDIR /app
 COPY target/demo-1.0.0.jar app.jar
 EXPOSE 8080
