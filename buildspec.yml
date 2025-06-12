@@ -1,65 +1,60 @@
 version: 0.2
 
-env:
-  variables:
-    IMAGE_REPO_NAME: spring-demo-ecr
-    CLUSTER_NAME: eks-cluster-1
-    REGION: us-east-1
-    ACCOUNT_ID: 619071307284
-
 phases:
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
-      - aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.$REGION.amazonaws.com
-      - REPOSITORY_URI=${ACCOUNT_ID}.dkr.ecr.$REGION.amazonaws.com/$IMAGE_REPO_NAME
+      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 619071307284.dkr.ecr.us-east-1.amazonaws.com
       - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
       - IMAGE_TAG=${COMMIT_HASH:=latest}
-      - echo Updating kubeconfig for EKS cluster...
-      - aws eks update-kubeconfig --region $REGION --name $CLUSTER_NAME
+      - REPO_URI=619071307284.dkr.ecr.us-east-1.amazonaws.com/spring-demo-ecr
+      - echo Updating kubeconfig for EKS...
+      - aws eks update-kubeconfig --region us-east-1 --name eks-cluster-1
   build:
     commands:
-      - echo Building application...
+      - echo Building Spring Boot application...
       - ./mvnw package -DskipTests
-      - docker build -t $REPOSITORY_URI:$IMAGE_TAG .
+      - docker build -t spring-demo-eks -t $REPO_URI:$IMAGE_TAG .
   post_build:
     commands:
-      - docker push $REPOSITORY_URI:$IMAGE_TAG
-      - echo Writing Kubernetes manifest...
+      - echo Pushing Docker image to ECR...
+      - docker push $REPO_URI:$IMAGE_TAG
+      - echo Creating Kubernetes manifest...
       - |
         cat <<EOF > deployment.yaml
         apiVersion: apps/v1
         kind: Deployment
         metadata:
-          name: spring-app
+          name: spring-demo-eks
         spec:
           replicas: 2
           selector:
             matchLabels:
-              app: spring-app
+              app: spring-demo-eks
           template:
             metadata:
               labels:
-                app: spring-app
+                app: spring-demo-eks
             spec:
               containers:
-              - name: spring-app
-                image: $REPOSITORY_URI:$IMAGE_TAG
+              - name: spring-demo-eks
+                image: $REPO_URI:$IMAGE_TAG
                 ports:
                 - containerPort: 8080
         ---
         apiVersion: v1
         kind: Service
         metadata:
-          name: spring-app-service
+          name: spring-demo-eks-service
         spec:
           selector:
-            app: spring-app
+            app: spring-demo-eks
           ports:
             - port: 80
               targetPort: 8080
           type: LoadBalancer
         EOF
+      - echo Deploying to EKS...
       - kubectl apply -f deployment.yaml
 artifacts:
   files:
