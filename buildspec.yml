@@ -3,21 +3,36 @@ version: 0.2
 phases:
   pre_build:
     commands:
+      - echo Installing dependencies...
+      - yum install -y jq maven
       - echo Logging in to Amazon ECR...
-      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 619071307284.dkr.ecr.us-east-1.amazonaws.com
-      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - aws --version
+      - ACCOUNT_ID=619071307284
+      - REGION=us-east-1
+      - REPO_NAME=spring-demo-ecr
+      - IMAGE_TAG=latest
+      - aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com
+
   build:
     commands:
+      - echo Building the JAR file...
+      - mvn clean install
       - echo Building the Docker image...
-      - docker build -t spring-demo-ecr:$IMAGE_TAG .
-      - docker tag spring-demo-ecr:$IMAGE_TAG 619071307284.dkr.ecr.us-east-1.amazonaws.com/spring-demo-ecr:$IMAGE_TAG
-      - docker push 619071307284.dkr.ecr.us-east-1.amazonaws.com/spring-demo-ecr:$IMAGE_TAG
+      - docker build -t $REPO_NAME .
+      - docker tag $REPO_NAME:$IMAGE_TAG $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:$IMAGE_TAG
+
   post_build:
     commands:
-      - echo Creating Kubernetes manifest files...
-      - sed "s|<IMAGE>|619071307284.dkr.ecr.us-east-1.amazonaws.com/spring-demo-ecr:$IMAGE_TAG|g" k8s/deployment.yaml > k8s/deployment_final.yaml
+      - echo Pushing Docker image to Amazon ECR...
+      - docker push $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:$IMAGE_TAG
+
+      - echo Creating Kubernetes deployment file...
+      - mkdir -p k8s-final
+      - sed "s|<IMAGE>|$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:$IMAGE_TAG|g" k8s/deployment.yaml > k8s-final/deployment.yaml
+      - cp k8s/service.yaml k8s-final/service.yaml
+      - echo Done.
 
 artifacts:
   files:
-    - k8s/deployment_final.yaml
-    - k8s/service.yaml
+    - k8s-final/deployment.yaml
+    - k8s-final/service.yaml
