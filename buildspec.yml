@@ -5,57 +5,19 @@ phases:
     commands:
       - echo Logging in to Amazon ECR...
       - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 619071307284.dkr.ecr.us-east-1.amazonaws.com
-      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
-      - IMAGE_TAG=${COMMIT_HASH:=latest}
-      - REPO_URI=619071307284.dkr.ecr.us-east-1.amazonaws.com/spring-demo-ecr
-      - echo Updating kubeconfig for EKS...
-      - aws eks update-kubeconfig --region us-east-1 --name eks-cluster-1
+      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
   build:
     commands:
-      - echo Building Spring Boot application...
-      - ./mvnw package -DskipTests
-      - docker build -t spring-demo-eks -t $REPO_URI:$IMAGE_TAG .
+      - echo Building the Docker image...
+      - docker build -t spring-demo-ecr:$IMAGE_TAG .
+      - docker tag spring-demo-ecr:$IMAGE_TAG 619071307284.dkr.ecr.us-east-1.amazonaws.com/spring-demo-ecr:$IMAGE_TAG
+      - docker push 619071307284.dkr.ecr.us-east-1.amazonaws.com/spring-demo-ecr:$IMAGE_TAG
   post_build:
     commands:
-      - echo Pushing Docker image to ECR...
-      - docker push $REPO_URI:$IMAGE_TAG
-      - echo Creating Kubernetes manifest...
-      - |
-        cat <<EOF > deployment.yaml
-        apiVersion: apps/v1
-        kind: Deployment
-        metadata:
-          name: spring-demo-eks
-        spec:
-          replicas: 2
-          selector:
-            matchLabels:
-              app: spring-demo-eks
-          template:
-            metadata:
-              labels:
-                app: spring-demo-eks
-            spec:
-              containers:
-              - name: spring-demo-eks
-                image: $REPO_URI:$IMAGE_TAG
-                ports:
-                - containerPort: 8080
-        ---
-        apiVersion: v1
-        kind: Service
-        metadata:
-          name: spring-demo-eks-service
-        spec:
-          selector:
-            app: spring-demo-eks
-          ports:
-            - port: 80
-              targetPort: 8080
-          type: LoadBalancer
-        EOF
-      - echo Deploying to EKS...
-      - kubectl apply -f deployment.yaml
+      - echo Creating Kubernetes manifest files...
+      - sed "s|<IMAGE>|619071307284.dkr.ecr.us-east-1.amazonaws.com/spring-demo-ecr:$IMAGE_TAG|g" k8s/deployment.yaml > k8s/deployment_final.yaml
+
 artifacts:
   files:
-    - deployment.yaml
+    - k8s/deployment_final.yaml
+    - k8s/service.yaml
