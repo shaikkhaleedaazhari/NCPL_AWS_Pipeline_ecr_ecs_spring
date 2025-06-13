@@ -29,7 +29,7 @@ phases:
 
       - echo Creating Kubernetes deployment file...
       - mkdir -p k8s-final
-      - sed "s|<IMAGE>|$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:$IMAGE_TAG|g" k8s/deployment.yaml > k8s-final/deployment.yaml
+      - sed "s|$REPO_NAME|$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:$IMAGE_TAG|g" k8s/deployment.yaml > k8s-final/deployment.yaml
       - cp k8s/service.yaml k8s-final/service.yaml
       - echo Done.
 
