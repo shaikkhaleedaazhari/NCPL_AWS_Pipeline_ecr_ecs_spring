@@ -28,9 +28,10 @@ phases:
       - docker push $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:$IMAGE_TAG
 
       - echo Creating Kubernetes deployment file...
-      - mkdir -p k8s-final
-      - sed "s|$REPO_NAME|$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:$IMAGE_TAG|g" k8s/deployment.yaml > k8s-final/deployment.yaml
-      - cp k8s/service.yaml k8s-final/service.yaml
+      - mkdir -p k8s
+      - sed "s|619071307284.dkr.ecr.us-east-1.amazonaws.com/spring-demo-eks:latest
+|$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:$IMAGE_TAG|g" k8s/deployment.yaml > k8s/deployment.yaml
+      - cp k8s/service.yaml k8s/service.yaml
       - echo Done.
 
 artifacts:
