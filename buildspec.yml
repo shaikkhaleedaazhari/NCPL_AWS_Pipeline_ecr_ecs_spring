@@ -27,11 +27,11 @@ phases:
       - echo Pushing Docker image to Amazon ECR...
       - docker push $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:$IMAGE_TAG
 
-      # - echo Creating Kubernetes deployment file...
-      # - mkdir -p k8s
-      # - sed "s|spring-demo-ecr|$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:$IMAGE_TAG|g" k8s/deployment.yaml > k8s/deployment.yaml
-      # - cp k8s/service.yaml k8s/service.yaml
-      # - echo Done.
+      - echo Creating Kubernetes deployment file...
+      - mkdir -p k8s
+      - sed "s|spring-demo-ecr|$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:$IMAGE_TAG|g" k8s/deployment.yaml > k8s/deployment.yaml
+      - cp k8s/service.yaml k8s/service.yaml
+      - echo Done.
 
 artifacts:
   files:
