@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: spring-demo
-        image: <IMAGE>  # this will be replaced by buildspec
+        image: spring-demo-ecr  # this will be replaced by buildspec
         ports:
         - containerPort: 8080
         resources:
